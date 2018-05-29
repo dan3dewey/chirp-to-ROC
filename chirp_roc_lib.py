@@ -83,7 +83,25 @@ def chirp_region(x_in, nhalfcycles=6.5, warpexp=0.65,
     return chirp_reg
 
 
-def y_yhat_plots(y, yh, title="Confusion-Dots Plot"):
+def plot_Xy(X_in, y_in, title="2D Xs with y color coding",
+                s=25):
+    """Plot the Xs in x0,x1 space and color-code by the ys.
+    """
+    # set figure limits
+    xmin = -1.0
+    xmax = 1.0
+    ymin = -1.0
+    ymax = 1.0
+
+    plt.title(title)
+    axes = plt.gca()
+    axes.set_xlim([xmin, xmax])
+    axes.set_ylim([ymin, ymax])
+    plt.scatter(X_in[:, 0], X_in[:, 1],
+                c=y_in.squeeze(), s=s, cmap=plt.cm.Spectral)
+
+
+def y_yhat_plots(y, yh, title="y and y_score"):
     """Output plots showing how y and y_hat are related:
     the "confusion dots" plot is analogous to the confusion table,
     and the standard ROC plot with its AOC value.
@@ -139,7 +157,7 @@ def y_yhat_plots(y, yh, title="Confusion-Dots Plot"):
     plt.plot([0.0, 0.5], [0.0, 0.0], '-', color='green', linewidth=5)
     plt.plot([0.5, 0.5], [0.0, 1.0], '-', color='gray', linewidth=2)
     plt.plot([0.5, 1.0], [1.0, 1.0], '-', color='green', linewidth=5)
-    plt.title(title, fontsize=16)
+    plt.title("Confusion-dots Plot: "+title, fontsize=16)
     # some labels
     plt.text(0.22, 1.52, "FN", fontsize=16, color='red')
     plt.text(0.72, 1.52, "TP", fontsize=16, color='green')
@@ -193,7 +211,7 @@ def y_yhat_plots(y, yh, title="Confusion-Dots Plot"):
                            ) * (fpr[ifpr - 1] - fpr[ifpr])
 
     plt.figure(figsize=(8, 8))
-    plt.title("ROC", size=16)
+    plt.title("ROC: "+title, size=16)
     plt.plot(fpr, recall, '-b')
     # Set the scales
     if zoom_in:
