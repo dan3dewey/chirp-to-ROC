@@ -1,3 +1,7 @@
+# Custon igores added to usual python ignore
+chirp-to-ROC.sublime-project
+chirp-to-ROC.sublime-workspace
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
