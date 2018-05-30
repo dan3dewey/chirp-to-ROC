@@ -146,6 +146,12 @@ def y_yhat_plots(y, yh, title="y and y_score"):
     ysframe = pd.DataFrame([y, yh, y_pred], index=[
                            'y', 'y-hat', 'y-pred']).transpose()
 
+    # If the yh is discrete (0 and 1s only) then blur it a bit
+    # for a better visual dots plot
+    if min(abs(yh-0.5)) > 0.49:
+        ysframe["y-hat"] = (0.51*ysframe["y-hat"]
+            + 0.49*np.random.rand(len(yh)))
+
     # Make a "confusion dots" plot
     # Add a blurred y column
     ysframe['y (blurred)'] = y + 0.1 * np.random.randn(len(y))
