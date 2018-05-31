@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.special import erf as scipy_erf
 
 
 def make_chirp(n_out=400, nhalfcycles=6.5, warpexp=0.65,
@@ -71,20 +72,48 @@ def make_chirp(n_out=400, nhalfcycles=6.5, warpexp=0.65,
 
 def chirp_region(x_in, nhalfcycles=6.5, warpexp=0.65,
                  symmetric=False, noise=None):
-    """Determine in which region of the chirp the x_in vectors are;
-    the noise value is not used.
-    x_in -- usual set of ML X vectors with shape of (m, 2)
-
+    """Determine which region of the chirp the x_in vectors are in
+    by assigning a probability of 0 to 1.
+    If the noise is non-zero the erf() is used to approximate
+    the probability, otherwise it is binary 0 or 1.
+    This is very close to the "best" classifier possible for the noisy chirp.
+    Parameters:
+        x_in -- usual set of ML X vectors with shape of (m, 2)
+        others as in make_chirp().
     """
-    # confirm some x_in dimensions
+    # confirm some of the x_in dimension properties
     assert((len(x_in.shape) == 2) and (x_in.shape[1] == 2))
-    # placeholder guess, y_hat is one of the x's, scaled to 0 to 1:
-    chirp_reg = 0.5 * (x_in[:, 1] + 1.0)
-    return chirp_reg
+    # convert the input xs (similar to the x1rot,x2rot above)
+    # to the diagonal coordinate system: the x1, x2 above.
+    x1r = x_in[:, 0]
+    x2r = x_in[:, 1]
+    x1 = (x1r + x2r) / 2.0
+    x2 = (x2r - x1r) / 2.0
+    y_out = np.zeros(len(x1))
+    # go from x1 to the x2boundary
+    x1warp = (abs(x1))**warpexp * x1 / abs(x1)
+    # Symmetry determines if we use sin or cos
+    if symmetric:
+        trigfunc = np.cos
+    else:
+        trigfunc = np.sin
+
+    # determine the boundary (in x2) between the two classes (at x1)
+    x2boundary = trigfunc(x1warp * nhalfcycles * np.pi) * (1.0 - abs(x1warp))
+    if noise > 0:
+        # Use erf() to assign a 0 to 1 probability
+        zboundary = (x2 - x2boundary)/noise
+        y_class = 0.5 * scipy_erf(zboundary / np.sqrt(2)) + 0.5
+    else:
+        # assign binary values
+        y_class = 1 * (x2 > x2boundary)
+    # show the assignment in the input coord.s:
+    ##plt.scatter(x1r, x2r, s=10, c=y_class, cmap=plt.cm.Spectral);
+    return y_class
 
 
 def plot_Xy(X_in, y_in, title="2D Xs with y color coding",
-                s=25):
+            s=25):
     """Plot the Xs in x0,x1 space and color-code by the ys.
     """
     # set figure limits
@@ -148,9 +177,9 @@ def y_yhat_plots(y, yh, title="y and y_score"):
 
     # If the yh is discrete (0 and 1s only) then blur it a bit
     # for a better visual dots plot
-    if min(abs(yh-0.5)) > 0.49:
-        ysframe["y-hat"] = (0.51*ysframe["y-hat"]
-            + 0.49*np.random.rand(len(yh)))
+    if min(abs(yh - 0.5)) > 0.49:
+        ysframe["y-hat"] = (0.51 * ysframe["y-hat"]
+                            + 0.49 * np.random.rand(len(yh)))
 
     # Make a "confusion dots" plot
     # Add a blurred y column
@@ -163,7 +192,7 @@ def y_yhat_plots(y, yh, title="y and y_score"):
     plt.plot([0.0, 0.5], [0.0, 0.0], '-', color='green', linewidth=5)
     plt.plot([0.5, 0.5], [0.0, 1.0], '-', color='gray', linewidth=2)
     plt.plot([0.5, 1.0], [1.0, 1.0], '-', color='green', linewidth=5)
-    plt.title("Confusion-dots Plot: "+title, fontsize=16)
+    plt.title("Confusion-dots Plot: " + title, fontsize=16)
     # some labels
     plt.text(0.22, 1.52, "FN", fontsize=16, color='red')
     plt.text(0.72, 1.52, "TP", fontsize=16, color='green')
@@ -217,7 +246,7 @@ def y_yhat_plots(y, yh, title="y and y_score"):
                            ) * (fpr[ifpr - 1] - fpr[ifpr])
 
     plt.figure(figsize=(8, 8))
-    plt.title("ROC: "+title, size=16)
+    plt.title("ROC: " + title, size=16)
     plt.plot(fpr, recall, '-b')
     # Set the scales
     if zoom_in:
