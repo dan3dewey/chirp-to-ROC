@@ -36,32 +36,6 @@ def relu(x):
     return s
 
 
-def load_planar_dataset(seed):
-
-    np.random.seed(seed)
-
-    m = 400  # number of examples
-    N = int(m / 2)  # number of points per class
-    D = 2  # dimensionality
-    X = np.zeros((m, D))  # data matrix where each row is a single example
-    # labels vector (0 for red, 1 for blue)
-    Y = np.zeros((m, 1), dtype='uint8')
-    a = 4  # maximum ray of the flower
-
-    for j in range(2):
-        ix = range(N * j, N * (j + 1))
-        t = np.linspace(j * 3.12, (j + 1) * 3.12, N) + \
-            np.random.randn(N) * 0.2  # theta
-        r = a * np.sin(4 * t) + np.random.randn(N) * 0.2  # radius
-        X[ix] = np.c_[r * np.sin(t), r * np.cos(t)]
-        Y[ix] = j
-
-    X = X.T
-    Y = Y.T
-
-    return X, Y
-
-
 def initialize_parameters(layer_dims):
     """
     Arguments:
@@ -200,7 +174,7 @@ def update_parameters(parameters, grads, learning_rate):
     return parameters
 
 
-def predict(X, y, parameters):
+def predict(X, parameters):
     """
     This function is used to predict the results of a  n-layer neural network.
 
@@ -209,7 +183,8 @@ def predict(X, y, parameters):
     parameters -- parameters of the trained model
 
     Returns:
-    p -- predictions for the given dataset X
+    p -- predictions (0,1) for the given dataset X
+    probas -- predictions as probabilities, 0 to 1 (sigmoid output)
     """
 
     m = X.shape[1]
@@ -227,12 +202,7 @@ def predict(X, y, parameters):
         else:
             p[0, i] = 0
 
-    # print results
-
-    #print ("predictions: " + str(p[0,:]))
-    #print ("true labels: " + str(y[0,:]))
-    ##accuracy = np.mean((p[0, :] == y[0, :]))
-    ##print("Accuracy: " + str(accuracy))
+    # remove printing of results
 
     return p, probas
 
@@ -257,166 +227,6 @@ def compute_cost(a3, Y):
     cost = 1. / m * np.nansum(logprobs)
 
     return cost
-
-
-def load_dataset():
-    train_dataset = h5py.File('datasets/train_catvnoncat.h5', "r")
-    train_set_x_orig = np.array(train_dataset["train_set_x"][
-                                :])  # your train set features
-    train_set_y_orig = np.array(train_dataset["train_set_y"][
-                                :])  # your train set labels
-
-    test_dataset = h5py.File('datasets/test_catvnoncat.h5', "r")
-    test_set_x_orig = np.array(test_dataset["test_set_x"][
-                               :])  # your test set features
-    test_set_y_orig = np.array(test_dataset["test_set_y"][
-                               :])  # your test set labels
-
-    classes = np.array(test_dataset["list_classes"][:])  # the list of classes
-
-    train_set_y = train_set_y_orig.reshape((1, train_set_y_orig.shape[0]))
-    test_set_y = test_set_y_orig.reshape((1, test_set_y_orig.shape[0]))
-
-    train_set_x_orig = train_set_x_orig.reshape(
-        train_set_x_orig.shape[0], -1).T
-    test_set_x_orig = test_set_x_orig.reshape(test_set_x_orig.shape[0], -1).T
-
-    train_set_x = train_set_x_orig / 255
-    test_set_x = test_set_x_orig / 255
-
-    return train_set_x, train_set_y, test_set_x, test_set_y, classes
-
-
-def predict_dec(parameters, X):
-    """
-    Used for plotting decision boundary.
-
-    Arguments:
-    parameters -- python dictionary containing your parameters
-    X -- input data of size (m, K)
-
-    Returns
-    predictions -- vector of predictions of our model (red: 0 / blue: 1)
-    """
-
-    # Predict using forward propagation and a classification threshold of 0.5
-    a3, cache = forward_propagation(X, parameters)
-    predictions = (a3 > 0.5)
-    return predictions
-
-
-def load_planar_dataset(randomness, seed):
-
-    np.random.seed(seed)
-
-    m = 50
-    N = int(m / 2)  # number of points per class
-    D = 2  # dimensionality
-    X = np.zeros((m, D))  # data matrix where each row is a single example
-    # labels vector (0 for red, 1 for blue)
-    Y = np.zeros((m, 1), dtype='uint8')
-    a = 2  # maximum ray of the flower
-
-    for j in range(2):
-
-        ix = range(N * j, N * (j + 1))
-        if j == 0:
-            # + np.random.randn(N)*randomness # theta
-            t = np.linspace(j, 4 * 3.1415 * (j + 1), N)
-            r = 0.3 * np.square(t) + np.random.randn(N) * randomness  # radius
-        if j == 1:
-            # + np.random.randn(N)*randomness # theta
-            t = np.linspace(j, 2 * 3.1415 * (j + 1), N)
-            r = 0.2 * np.square(t) + np.random.randn(N) * randomness  # radius
-
-        X[ix] = np.c_[r * np.cos(t), r * np.sin(t)]
-        Y[ix] = j
-
-    X = X.T
-    Y = Y.T
-
-    return X, Y
-
-
-def plot_decision_boundary(model, X, y):
-    # Set min and max values and give it some padding
-    x_min, x_max = X[0, :].min() - 1, X[0, :].max() + 1
-    y_min, y_max = X[1, :].min() - 1, X[1, :].max() + 1
-    h = 0.01
-    # Generate a grid of points with distance h between them
-    xx, yy = np.meshgrid(np.arange(x_min, x_max, h),
-                         np.arange(y_min, y_max, h))
-    # Predict the function value for the whole grid
-    Z = model(np.c_[xx.ravel(), yy.ravel()])
-    Z = Z.reshape(xx.shape)
-    # Plot the contour and training examples
-    plt.contourf(xx, yy, Z, cmap=plt.cm.Spectral)
-    # plt.ylabel('x2')
-    # plt.xlabel('x1')
-    plt.scatter(X[0, :], X[1, :], c=y, cmap=plt.cm.Spectral)
-    plt.show()
-
-
-def make_chirp(n_out=400, nhalfcycles=6.0, warpexp=0.65, symmetric=False, noise=0):
-    # Create two classes with a "chirp" boundary
-    # Parameters:
-    #   n_out -- number of generated samples returned
-    #   nhalfcycles -- half-cycles in one side of the chirp
-    #   warpexp -- exponent used to warp the chirp
-    # symmetric -- determines a central chirp (True) or node (False)
-
-    # Symmetry determines if we use sin or cos
-    if symmetric:
-        trigfunc = np.cos
-    else:
-        trigfunc = np.sin
-
-    # we'll lose about 1/2 of the points, include some extra
-    n_samples = 2 * int(n_out + 5 * np.sqrt(n_out))
-    # x1, x2 are uniform -1 to 1:
-    x1 = 2.0 * np.random.rand(n_samples) - 1.0
-    x2 = 2.0 * np.random.rand(n_samples) - 1.0
-    # plt.scatter(x1,x2)
-
-    # warp the x1 scale, preserving -1,1 --> -1,1
-    x1warp = (abs(x1))**warpexp * x1 / abs(x1)
-    # determine the boundary between the two classes
-    x2boundary = trigfunc(x1warp * nhalfcycles * np.pi) * (1.0 - abs(x1warp))
-    # plt.scatter(x1,x2boundary)
-
-    y_class = x2 > x2boundary
-    ##plt.scatter(x1, x2, c=y_class, s=40, cmap=plt.cm.Spectral);
-
-    # rotate x1, x2 by 45 deg (also scales by sqrt(2))
-    # and add noise (blurring) if desired
-    x1rot = x1 - x2
-    x2rot = x1 + x2
-    if noise > 0:
-        x1rot += noise * np.random.randn(len(x1rot))
-        x2rot += noise * np.random.randn(len(x2rot))
-    ##plt.scatter(x1rot, x2rot, c=y_class, s=40, cmap=plt.cm.Spectral);
-
-    # and keep just the central square
-    x1out = []
-    x2out = []
-    yout = []
-    for isamp in range(len(x1rot)):
-        if (abs(x1rot[isamp]) <= 1.0) and (abs(x2rot[isamp]) <= 1.0):
-            x1out.append(x1rot[isamp])
-            x2out.append(x2rot[isamp])
-            yout.append(y_class[isamp])
-    percent1 = int(10000 * sum(yout) / len(yout)) / 100
-    # print("Number of output samples =",len(yout),
-    # " Percent split: ", percent1, "-", 100-percent1)
-    ##plt.scatter(x1out, x2out, c=yout, s=40, cmap=plt.cm.Spectral);
-
-    # Return X and Y in Ng's shapes
-    out_X = np.zeros((2, n_out))
-    out_X[0, :] = x1out[0:n_out]
-    out_X[1, :] = x2out[0:n_out]
-    out_Y = np.zeros((1, n_out))
-    out_Y[0, :] = yout[0:n_out]
-    return out_X, out_Y
 
 
 def model(X, Y, hidden2size=[20,3], learning_rate=0.2, num_iterations=35000, print_cost=True, Lambda=0, keep_prob=1):
