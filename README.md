@@ -1,9 +1,9 @@
 # chirp-to-ROC
 
 
-<table>
+<table width="100%">
 	<tl>
-		<td><IMG src="images/chirp_no_noise.png" width=400>
+		<td width="45%"><IMG src="images/chirp_no_noise.png" width=400>
 		<p>This repository provides chirp_roc_lib.py
 		which has i) a 2D chirp-boundary data generator, and
 		ii) a routine to compare the actual and model-generated
@@ -16,7 +16,7 @@
 			similarly noisy) to show some of the characteristics of the
 			different models. 
 		</td>
-		<td><IMG src="images/confusion_dots_of_nn.png" width=500> <IMG src="images/roc_of_nn.png" width=500></td>
+		<td><IMG src="images/confusion_dots_of_nn.png" width=400> <IMG src="images/roc_of_nn.png" width=400></td>
 	</tl>
 </table>
 
