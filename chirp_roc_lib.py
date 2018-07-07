@@ -130,18 +130,20 @@ def plot_Xy(X_in, y_in, title="2D Xs with y color coding",
                 c=y_in.squeeze(), s=s, cmap=plt.cm.Spectral)
 
 
-def y_yhat_plots(y, yh, title="y and y_score"):
+def y_yhat_plots(y, yh, title="y and y_score", y_thresh=0.5):
     """Output plots showing how y and y_hat are related:
     the "confusion dots" plot is analogous to the confusion table,
     and the standard ROC plot with its AOC value.
+    The y=1 threshold can be changed with the y_thresh parameter.
     """
-    # The predicted y value with threshold = 0.5
-    y_pred = 1.0 * (yh > 0.5)
+    # The predicted y value with threshold = y_thresh
+    y_pred = 1.0 * (yh > y_thresh)
 
     # Show table of actual and predicted counts
     crosstab = pd.crosstab(y, y_pred, rownames=[
                            'Actual'], colnames=['  Predicted'])
-    print("\nConfusion matrix:\n\n", crosstab)
+    print("\nConfusion matrix (y_thresh={:.3f}):\n\n".format(y_thresh),
+        crosstab)
 
     # Calculate the various metrics and rates
     tn = crosstab[0][0]
@@ -186,18 +188,23 @@ def y_yhat_plots(y, yh, title="y and y_score"):
     ysframe['y (blurred)'] = y + 0.1 * np.random.randn(len(y))
 
     # Plot the real y (blurred) vs the predicted probability
+    # Note the flipped ylim values.
     ysframe.plot.scatter('y-hat', 'y (blurred)', figsize=(12, 5),
                          s=2, xlim=(0.0, 1.0), ylim=(1.8, -0.8))
-
-    plt.plot([0.0, 0.5], [0.0, 0.0], '-', color='green', linewidth=5)
-    plt.plot([0.5, 0.5], [0.0, 1.0], '-', color='gray', linewidth=2)
-    plt.plot([0.5, 1.0], [1.0, 1.0], '-', color='green', linewidth=5)
+    # show the "correct" locations on the plot
+    plt.plot([0.0, y_thresh], [0.0, 0.0], '-',
+        color='green', linewidth=5)
+    plt.plot([y_thresh, y_thresh], [0.0, 1.0], '-',
+        color='gray', linewidth=2)
+    plt.plot([y_thresh, 1.0], [1.0, 1.0], '-',
+        color='green', linewidth=5)
     plt.title("Confusion-dots Plot: " + title, fontsize=16)
     # some labels
-    plt.text(0.22, 1.52, "FN", fontsize=16, color='red')
-    plt.text(0.72, 1.52, "TP", fontsize=16, color='green')
-    plt.text(0.22, -0.50, "TN", fontsize=16, color='green')
-    plt.text(0.72, -0.50, "FP", fontsize=16, color='red')
+    ythr2 = y_thresh/2.0
+    plt.text(ythr2 - 0.03, 1.52, "FN", fontsize=16, color='red')
+    plt.text(ythr2 + 0.5 - 0.03, 1.52, "TP", fontsize=16, color='green')
+    plt.text(ythr2 - 0.03, -0.50, "TN", fontsize=16, color='green')
+    plt.text(ythr2 + 0.5 - 0.03, -0.50, "FP", fontsize=16, color='red')
 
     plt.show()
 
@@ -260,15 +267,18 @@ def y_yhat_plots(y, yh, title="y and y_score"):
     # The reference line
     plt.plot([0., 1.], [0., 1.], '--', color='orange')
 
-    # The point at the y_hat = 0.5 threshold
+    # The point at the y_hat = y_tresh threshold
     if True:
         plt.plot([this_fpr], [this_recall], 'o', c='blue', markersize=15)
         plt.xlabel('False Postive Rate', size=16)
         plt.ylabel('Recall', size=16)
-        plt.annotate('y_hat = 0.50', xy=(this_fpr + 0.015,
-                                         this_recall), size=14, color='blue')
-        plt.annotate(' Pos.Fraction = ' + str(100 * this_posfrac)[0:4] + '%',
-                     xy=(this_fpr + 0.02, this_recall - 0.03), size=14, color='blue')
+        plt.annotate('y_hat = {:.2f}'.format(y_thresh),
+                            xy=(this_fpr + 0.015,
+                            this_recall), size=14, color='blue')
+        plt.annotate(' Pos.Fraction = ' +
+                        '  {:.0f}%'.format(100 * this_posfrac),
+                        xy=(this_fpr + 0.02, this_recall - 0.03),
+                        size=14, color='blue')
 
     # Show the ROC area (shows on zoomed-out plot)
     plt.annotate('ROC Area = ' + str(roc_area)
